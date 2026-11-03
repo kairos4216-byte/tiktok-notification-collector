@@ -1,0 +1,39 @@
+{
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "TikTok通知采集"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "js": [
+        "content.js"
+      ],
+      "matches": [
+        "https://www.tiktok.com/*"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "description": "在已打开的 TikTok 页面采集通知（评论/点赞/粉丝），按设置发送到 Google Apps Script 和目标 Google 表格。支持时区选择、自动/手动模式、悬浮框隐藏与失败补发。",
+  "host_permissions": [
+    "https://www.tiktok.com/*",
+    "https://script.google.com/*",
+    "https://script.googleusercontent.com/*"
+  ],
+  "manifest_version": 3,
+  "name": "TikTok通知采集",
+  "permissions": [
+    "alarms",
+    "storage",
+    "tabs",
+    "notifications"
+  ],
+  "version": "1.0.1",
+  "icons": {
+    "128": "icon.png"
+  },
+  "minimum_chrome_version": "102"
+}

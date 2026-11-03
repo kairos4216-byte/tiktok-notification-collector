@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  body {
+    width: 340px;
+    margin: 0;
+    padding: 12px 14px 14px;
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    font-size: 13px;
+    color: #222;
+  }
+  h1 { font-size: 15px; margin: 0 0 10px; }
+  .row { margin: 7px 0; }
+  .status { font-weight: 600; }
+  .ok { color: #1a7f37; }
+  .warn { color: #b54708; }
+  .err { color: #b42318; }
+  .muted { color: #666; font-size: 12px; }
+  label { display: block; margin: 9px 0 3px; color: #444; }
+  input[type="text"], input[type="password"], select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 12px;
+  }
+  button {
+    padding: 7px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .token-row { display: flex; align-items: center; gap: 6px; }
+  .token-row input { flex: 1; min-width: 0; }
+  .token-row button { min-width: 56px; padding: 6px 9px; white-space: nowrap; }
+  button.primary { background: #1a7f37; border-color: #1a7f37; color: #fff; }
+  button:disabled { opacity: .5; cursor: default; }
+  .btns { display: flex; gap: 8px; margin-top: 12px; }
+  .check { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+  .check input { margin: 0; }
+  hr { border: none; border-top: 1px solid #eee; margin: 12px 0 4px; }
+</style>
+</head>
+<body>
+  <h1>TikTok通知采集 <span style="font-size:11px;color:#999;font-weight:normal">v1.0.1</span></h1>
+
+  <div class="row">首页状态：<span id="tabStatus" class="status">检测中…</span></div>
+  <div class="row">当前模式：<span id="modeStatus" class="status">检测中…</span></div>
+  <div class="row muted" id="nextAuto"></div>
+  <div class="row muted" id="lastRun">上次采集：暂无</div>
+  <div class="row muted" id="pendingRow">待补发：0 条</div>
+  <div class="row muted" id="errorRow" style="display:none"></div>
+
+  <label for="webhookUrl">接收地址（Apps Script 网址）</label>
+  <input type="text" id="webhookUrl" placeholder="https://script.google.com/macros/s/…/exec">
+  <label for="token">口令（token，与 Apps Script 里填的一致）</label>
+  <div class="token-row">
+    <input type="password" id="token" placeholder="自己定的一串字符" autocomplete="off">
+    <button type="button" id="toggleToken" aria-controls="token" aria-pressed="false" aria-label="显示口令">显示</button>
+  </div>
+
+  <label for="sheetUrl">目标表格链接（在目标 sheet 页复制地址栏链接，带 gid 的那种）</label>
+  <input type="text" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/…/edit#gid=…">
+  <div class="row muted" id="sheetHint"></div>
+
+  <label for="accountOverride">当前账号 @用户名（选填）</label>
+  <input type="text" id="accountOverride" placeholder="@user12345678">
+
+  <label for="timeZoneChoice">采集时间写入时区</label>
+  <select id="timeZoneChoice">
+    <option value="Asia/Ho_Chi_Minh">越南时间（UTC+7，默认）</option>
+    <option value="Asia/Shanghai">中国北京时间（UTC+8）</option>
+    <option value="Asia/Tokyo">日本东京时间</option>
+    <option value="Asia/Seoul">韩国首尔时间</option>
+    <option value="Europe/Madrid">西班牙马德里时间</option>
+    <option value="Europe/Lisbon">葡萄牙里斯本时间</option>
+    <option value="America/New_York">美国纽约时间</option>
+    <option value="UTC">UTC 世界协调时间</option>
+    <option value="custom">其他时区（自行填写）</option>
+  </select>
+  <input type="text" id="customTimeZone" placeholder="例如：Asia/Bangkok" autocomplete="off" style="display:none;margin-top:6px" aria-label="自定义时区（IANA 名称）">
+  <div class="row muted" id="timeZoneHint">默认越南时间：Asia/Ho_Chi_Minh（UTC+7）；表格写入格式为 YYYY-MM-DD HH:mm:ss。</div>
+
+  <div class="check">
+    <input type="checkbox" id="diagnostic">
+    <label for="diagnostic" style="margin:0">诊断模式（仅上传匿名结构信息，不上传页面原文）</label>
+  </div>
+
+  <div class="check">
+    <input type="checkbox" id="showPageButton">
+    <label for="showPageButton" style="margin:0">在 TikTok 页面显示悬浮采集框（页面可一键隐藏）</label>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <span style="color:#444">运行模式：</span>
+    <label style="display:inline;margin:0 8px 0 4px"><input type="radio" name="mode" value="auto"> 自动</label>
+    <label style="display:inline;margin:0 8px 0 0"><input type="radio" name="mode" value="manual"> 手动</label>
+    <label style="display:inline;margin:0"><input type="radio" name="mode" value="off"> 暂停</label>
+  </div>
+  <div class="row muted" id="modeHint"></div>
+
+  <div class="btns">
+    <button id="runNow" class="primary">立即采集</button>
+  </div>
+
+  <hr>
+  <div class="muted">
+    插件只在已打开的 TikTok 首页标签页里读通知，不会自己打开页面。
+    「自动」模式约每 2 小时一轮，且页面 5 分钟没人操作时才会开始——开着首页离开即可。
+    「手动」模式不会自动跑，只能点「立即采集」或页面右上角的按钮（需要开启页面按钮显示）。
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
